@@ -1,8 +1,15 @@
+import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module.js';
+import { AppModule } from './app.module';
+import { configureApp } from './app.setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 4000);
+  configureApp(app);
+
+  const port = Number(app.get(ConfigService).get('PORT', 4000));
+  await app.listen(port);
+  Logger.log(`API gateway listening on http://localhost:${port}/api`);
 }
-await bootstrap();
+void bootstrap();

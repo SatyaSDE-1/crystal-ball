@@ -1,29 +1,45 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types.js';
-import { AppModule } from '../src/app.module.js';
+import { ConfigService } from '@nestjs/config';
+import { Test } from '@nestjs/testing';
+import { Socket } from 'node:net';
+import { AppModule } from './../src/app.module';
+import { getMicroserviceOptions } from './../src/microservice.options';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+const TEST_PORT = 4101;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+function canConnect(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new Socket();
+    socket.once('connect', () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once('error', () => resolve(false));
+    socket.connect(port, '127.0.0.1');
+  });
+}
+
+describe('AI assistant microservice bootstrap (e2e)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    process.env.TCP_HOST = '127.0.0.1';
+    process.env.TCP_PORT = String(TEST_PORT);
+
+    const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    app = moduleRef.createNestApplication();
+    app.connectMicroservice(getMicroserviceOptions(app.get(ConfigService)));
+    await app.startAllMicroservices();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
-
-  afterEach(async () => {
+  afterAll(async () => {
     await app.close();
+  });
+
+  it('accepts TCP connections on the configured port', async () => {
+    await expect(canConnect(TEST_PORT)).resolves.toBe(true);
   });
 });

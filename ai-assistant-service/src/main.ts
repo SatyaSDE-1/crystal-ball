@@ -1,15 +1,20 @@
+import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { Transport } from '@nestjs/microservices';
-import { AppModule } from './app.module.js';
+import { AppModule } from './app.module';
+import { getMicroserviceOptions } from './microservice.options';
 
 async function bootstrap() {
-  const app = await NestFactory.createMicroservice(AppModule, {
-    transport: Transport.TCP,
-    options: {
-      host: process.env.HOST ?? '127.0.0.1',
-      port: Number(process.env.PORT ?? 4001),
-    },
-  });
-  await app.listen();
+  // Hybrid app: the HTTP side is never listened on; it only gives us
+  // ConfigService before we choose the TCP options.
+  const app = await NestFactory.create(AppModule);
+  const options = getMicroserviceOptions(app.get(ConfigService));
+
+  app.connectMicroservice(options);
+  await app.startAllMicroservices();
+
+  Logger.log(
+    `AI assistant service listening on TCP ${JSON.stringify(options.options)}`,
+  );
 }
-await bootstrap();
+void bootstrap();
