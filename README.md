@@ -37,6 +37,23 @@ cd api-gateway && npm run start:dev
 
 Check it works: `curl -i http://localhost:4000/api` → **404 JSON** (server is up, prefix works), and `curl http://localhost:4000/api/approvals` → 4 approvals.
 
+### Frontend (Next.js App Router)
+
+```bash
+cd frontend && pnpm install && pnpm dev     # http://localhost:3000
+```
+
+Pages are rendered on the server wherever possible; only the interactive pieces are client components. The API address is a server-only env var (`API_URL`, default `http://localhost:4000/api`, see `frontend/.env.example`).
+
+| Route | Rendering | Pages Router equivalent |
+| --- | --- | --- |
+| `/` (Approvals) | server-side rendered on every request; fetches `GET /api/approvals` on the server | `getServerSideProps` |
+| `/[section]` (dashboard, reports, ...) | statically generated for the 6 known sections, refreshed every 60 s; other paths 404 | `getStaticPaths` (`fallback: false`) + `getStaticProps` with `revalidate` |
+| `/approvals/export` | static, refreshed every 60 s | `getStaticProps` with `revalidate` |
+| `/approvals/new` | static; only the form is a client component | `getStaticProps` |
+
+Client islands (need the browser): the approval queue (search, filter, selection), the details panel, the assistant panel, the new-approval form. If the API is down, the Approvals page still renders, with sample data and a visible notice.
+
 | Service | Variable | Default | Purpose |
 | --- | --- | --- | --- |
 | gateway | `PORT` | 4000 | HTTP port |

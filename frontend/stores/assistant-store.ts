@@ -1,5 +1,3 @@
-'use client'
-
 import { create } from 'zustand'
 import type { AssistantAction, AssistantActionId, AssistantState, ChatMessage } from '@/types/approvals'
 import { assistantService } from '@/services/assistant-service'
