@@ -85,8 +85,8 @@ describe('Rate limiting (e2e)', () => {
     const res = await postSummary('limit-test').expect(429);
 
     expect(res.headers['content-type']).toMatch(/application\/json/);
-    expect(res.body).toMatchObject({ statusCode: 429 });
-    expect(typeof (res.body as { message: unknown }).message).toBe('string');
+    expect(res.body).toMatchObject({ code: 'RATE_LIMITED' });
+    expect(typeof (res.body as { error: unknown }).error).toBe('string');
     expect(Number(res.headers['retry-after'])).toBeGreaterThan(0);
   });
 

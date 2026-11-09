@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { configureApp } from './app.setup';
+import { AllExceptionsFilter } from './common/all-exceptions.filter';
 
 function buildApp(env: Record<string, string> = {}) {
   const config = {
@@ -7,13 +8,15 @@ function buildApp(env: Record<string, string> = {}) {
   };
   const setGlobalPrefix = jest.fn();
   const enableCors = jest.fn();
+  const useGlobalFilters = jest.fn();
   const app = {
     get: jest.fn().mockReturnValue(config),
     setGlobalPrefix,
     enableCors,
+    useGlobalFilters,
   } as unknown as INestApplication;
 
-  return { app, setGlobalPrefix, enableCors };
+  return { app, setGlobalPrefix, enableCors, useGlobalFilters };
 }
 
 describe('configureApp', () => {
@@ -35,5 +38,15 @@ describe('configureApp', () => {
     expect(enableCors).toHaveBeenCalledWith({
       origin: 'http://localhost:3000',
     });
+  });
+
+  it('registers the global exception filter', () => {
+    const { app, useGlobalFilters } = buildApp();
+
+    configureApp(app);
+
+    expect(useGlobalFilters).toHaveBeenCalledWith(
+      expect.any(AllExceptionsFilter),
+    );
   });
 });

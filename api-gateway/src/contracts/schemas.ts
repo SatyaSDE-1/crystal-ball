@@ -28,3 +28,15 @@ export const ChatRequest = z
     },
   );
 export type ChatRequest = z.infer<typeof ChatRequest>;
+
+export const HelpRequest = z.object({
+  question: z.string().min(3),
+});
+export type HelpRequest = z.infer<typeof HelpRequest>;
+
+/**
+ * Summary and greeting take no input. The body may be missing or `{}`;
+ * anything that is not an object is rejected, and extra fields are dropped.
+ */
+export const EmptyRequest = z.object({}).default({});
+export type EmptyRequest = z.infer<typeof EmptyRequest>;

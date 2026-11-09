@@ -28,7 +28,7 @@ describe('Gateway bootstrap (e2e)', () => {
     const res = await request(app.getHttpServer()).get('/api').expect(404);
 
     expect(res.headers['content-type']).toMatch(/application\/json/);
-    expect(res.body).toMatchObject({ statusCode: 404 });
+    expect(res.body).toMatchObject({ code: 'NOT_FOUND' });
   });
 
   it('allows the configured CORS origin', async () => {

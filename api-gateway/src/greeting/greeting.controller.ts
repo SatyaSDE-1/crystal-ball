@@ -1,10 +1,13 @@
 import {
+  Body,
   Controller,
   HttpCode,
   HttpStatus,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { EmptyRequest } from '../contracts/schemas';
 import { SessionThrottlerGuard } from '../rate-limit/session-throttler.guard';
 import { GreetingService } from './greeting.service';
 
@@ -16,7 +19,7 @@ export class GreetingController {
   // POST creates nothing here, so answer 200 instead of Nest's default 201.
   @Post()
   @HttpCode(HttpStatus.OK)
-  getGreeting() {
-    return this.greetingService.getGreeting();
+  getGreeting(@Body(new ZodValidationPipe(EmptyRequest)) body: EmptyRequest) {
+    return this.greetingService.getGreeting(body);
   }
 }
