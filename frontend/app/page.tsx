@@ -25,6 +25,6 @@ export default async function Page() {
         <ApprovalWorkspace approvals={approvals} />
       </div>
     </main>
-    <AssistantLayer />
+    <AssistantLayer approvals={approvals} />
   </div>
 }

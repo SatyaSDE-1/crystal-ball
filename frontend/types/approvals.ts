@@ -36,29 +36,3 @@ export type ApprovalsResult = {
   /** true when the API could not be reached and sample data is shown instead */
   unavailable: boolean
 }
-
-export type ChatRole = 'assistant' | 'user'
-
-export type ChatMessage = {
-  id: string
-  role: ChatRole
-  text: string
-  isStreaming?: boolean
-}
-
-export type AssistantActionId = 'summary' | 'talk' | 'help' | 'teach' | 'greeting'
-
-export type AssistantAction = {
-  id: AssistantActionId
-  label: string
-  description: string
-  response: string
-  iconName: 'clipboard' | 'message' | 'book' | 'graduation' | 'refresh'
-}
-
-export type AssistantState = {
-  selectedActionId: AssistantActionId | null
-  messages: ChatMessage[]
-  isStreaming: boolean
-  error: string | null
-}

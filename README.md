@@ -43,7 +43,7 @@ Check it works: `curl -i http://localhost:4000/api` → **404 JSON** (server is 
 cd frontend && pnpm install && pnpm dev     # http://localhost:3000
 ```
 
-Pages are rendered on the server wherever possible; only the interactive pieces are client components. The API address is a server-only env var (`API_URL`, default `http://localhost:4000/api`, see `frontend/.env.example`).
+Pages are rendered on the server wherever possible; only the interactive pieces are client components. Two address settings (see `frontend/.env.example`): `API_URL` (server-only, used while rendering pages) and `NEXT_PUBLIC_API_URL` (used by the browser for the assistant's requests; an address only, never a secret). Both default to `http://localhost:4000/api`, and the gateway's `CORS_ORIGIN` must match the origin the frontend is served from (default `http://localhost:3000`).
 
 | Route | Rendering | Pages Router equivalent |
 | --- | --- | --- |
@@ -53,6 +53,21 @@ Pages are rendered on the server wherever possible; only the interactive pieces 
 | `/approvals/new` | static; only the form is a client component | `getStaticProps` |
 
 Client islands (need the browser): the approval queue (search, filter, selection), the details panel, the assistant panel, the new-approval form. If the API is down, the Approvals page still renders, with sample data and a visible notice.
+
+#### The assistant panel
+
+Opened with "Ask Crystal Ball", laid out like the reference panel: dark header (avatar, title, info, expand, minimise, close), a "Replay Greeting" link, four action cards, and a footer with the item count. Each action calls the real API:
+
+| Action | API | What the UI shows |
+| --- | --- | --- |
+| Greeting (on open, and **Replay Greeting**) | `POST /greeting` | a fresh greeting; "Basic greeting" label if the AI was unavailable; a local greeting if the API cannot be reached |
+| Present me Summary | `POST /summary` | headline, items ranked by urgency with titles and reasons; "AI summary" badge, or a notice when it is the basic ranking |
+| Help me | `POST /help` | answer grounded in the policy note, "Sources" chips; "not covered" shown plainly; example questions |
+| Talk to me / Teach me | `POST /chat` (SSE) | multi-turn chat, tokens rendered as they arrive, Stop button, retry, "New conversation"; Talk and Teach keep separate histories |
+
+Loading (skeletons, typing dots), error (friendly alert with **Try again**; rate limits say how long to wait) and "AI unavailable" states are all visible, and the UI never shows status codes, hosts or stack traces. Every response is validated with Zod before it is used, and model text is rendered as plain text (only `**bold**` and lists are interpreted), never as HTML. State lives in one Zustand store (`stores/assistant-store.ts`) created by a provider, so nothing is prop-drilled; the HTTP and SSE code is in `services/`. The browser sends an `x-session-id` (kept in `sessionStorage`) with every request, which the API uses for rate limiting.
+
+Frontend tests (Vitest + Testing Library, needs **Node 22**): `cd frontend && pnpm test`. They cover the SSE parser, the API client, the store, and the panel's loading, streaming and error states.
 
 | Service | Variable | Default | Purpose |
 | --- | --- | --- | --- |
