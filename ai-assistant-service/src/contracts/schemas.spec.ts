@@ -152,6 +152,21 @@ describe('ChatRequest', () => {
       false,
     );
   });
+
+  it('rejects a conversation whose last message is from the assistant', () => {
+    const endsWithAssistant = {
+      ...valid,
+      messages: [
+        { role: 'user', content: 'How do I review a PDF?' },
+        { role: 'assistant', content: 'First open the file.' },
+      ],
+    };
+
+    const result = ChatRequest.safeParse(endsWithAssistant);
+
+    expect(result.success).toBe(false);
+    expect(JSON.stringify(result.error?.issues)).toContain('messages');
+  });
 });
 
 describe('HelpRequest', () => {
