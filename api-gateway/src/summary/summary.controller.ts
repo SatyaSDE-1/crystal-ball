@@ -1,7 +1,15 @@
-import { Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { SessionThrottlerGuard } from '../rate-limit/session-throttler.guard';
 import { SummaryService } from './summary.service';
 
 @Controller('summary')
+@UseGuards(SessionThrottlerGuard)
 export class SummaryController {
   constructor(private readonly summaryService: SummaryService) {}
 
