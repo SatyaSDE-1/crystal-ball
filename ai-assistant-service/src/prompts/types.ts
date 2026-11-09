@@ -12,6 +12,11 @@ export interface ApprovalsContext {
   approvals: Approval[];
 }
 
+/** Context for the summary prompt: the queue, and the operator's locale if known. */
+export interface SummaryPromptContext extends ApprovalsContext {
+  locale?: string;
+}
+
 /** Context for the conversational prompts (talk / teach). */
 export interface ChatPromptContext extends ApprovalsContext {
   question: string;
@@ -31,4 +36,5 @@ export interface HelpPromptContext {
 
 export interface GreetingPromptContext {
   pendingCount: number;
+  locale?: string;
 }

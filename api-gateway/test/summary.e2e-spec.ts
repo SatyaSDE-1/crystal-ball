@@ -3,7 +3,7 @@ import {
   INestApplication,
   INestMicroservice,
 } from '@nestjs/common';
-import { MessagePattern, Transport } from '@nestjs/microservices';
+import { MessagePattern, Payload, Transport } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
@@ -28,8 +28,11 @@ const STUB_SUMMARY = {
 @Controller()
 class StubAiAssistantController {
   @MessagePattern({ cmd: SummaryPtrn })
-  getSummary() {
-    return STUB_SUMMARY;
+  getSummary(@Payload() payload: { locale?: string } | undefined) {
+    // echoes the locale it received, so a test can see what was forwarded
+    return payload?.locale
+      ? { ...STUB_SUMMARY, headline: `locale:${payload.locale}` }
+      : STUB_SUMMARY;
   }
 }
 
@@ -72,6 +75,28 @@ describe('POST /api/summary (e2e)', () => {
 
     expect(res.headers['content-type']).toMatch(/application\/json/);
     expect(res.body).toEqual(STUB_SUMMARY);
+  });
+
+  it("forwards the operator's language to the AI service", async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/summary')
+      .set('x-session-id', 'locale-1')
+      .send({ locale: 'es' })
+      .expect(200);
+
+    expect((res.body as { headline: string }).headline).toBe('locale:es');
+  });
+
+  it('answers 400 for a locale that is not a language code', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/summary')
+      .set('x-session-id', 'locale-2')
+      .send({ locale: 'not a locale!' })
+      .expect(400);
+
+    expect((res.body as { errors: { field: string }[] }).errors[0].field).toBe(
+      'locale',
+    );
   });
 
   it('works without a body or a session header', async () => {

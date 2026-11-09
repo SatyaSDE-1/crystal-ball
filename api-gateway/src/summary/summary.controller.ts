@@ -7,7 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { EmptyRequest } from '../contracts/schemas';
+import { LocaleRequest } from '../contracts/schemas';
 import { SessionThrottlerGuard } from '../rate-limit/session-throttler.guard';
 import { SummaryService } from './summary.service';
 
@@ -19,7 +19,7 @@ export class SummaryController {
   // POST creates nothing here, so answer 200 instead of Nest's default 201.
   @Post()
   @HttpCode(HttpStatus.OK)
-  getSummary(@Body(new ZodValidationPipe(EmptyRequest)) body: EmptyRequest) {
+  getSummary(@Body(new ZodValidationPipe(LocaleRequest)) body: LocaleRequest) {
     return this.summaryService.getSummary(body);
   }
 }

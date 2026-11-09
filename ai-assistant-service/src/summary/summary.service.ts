@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ApprovalsService } from '../approvals/approvals.service';
-import { Approval, SummaryResponse } from '../contracts/schemas';
+import { Approval, LocaleRequest, SummaryResponse } from '../contracts/schemas';
 import { LLM_PROVIDER, type LlmProvider } from '../llm/llm.provider';
-import { summaryPromptV1 } from '../prompts/summary.v1';
+import { summaryPromptV2 } from '../prompts/summary.v2';
 import { rankApprovals } from './fallback-ranking';
 import { parseSummary } from './summary.parser';
 
@@ -15,17 +15,17 @@ export class SummaryService {
     private readonly approvalsService: ApprovalsService,
   ) {}
 
-  /** Never throws: any failure degrades to the deterministic ranking. */
-  async getSummary(): Promise<SummaryResponse> {
+
+  async getSummary({ locale }: LocaleRequest = {}): Promise<SummaryResponse> {
     const approvals = this.approvalsService.getApprovals();
 
     try {
       const raw = await this.llm.complete({
-        system: summaryPromptV1.system,
+        system: summaryPromptV2.system,
         messages: [
           {
             role: 'user',
-            content: summaryPromptV1.buildUserPrompt({ approvals }),
+            content: summaryPromptV2.buildUserPrompt({ approvals, locale }),
           },
         ],
       });
@@ -44,7 +44,7 @@ export class SummaryService {
         );
       }
 
-      // The server decides the source, never the model.
+  
       return { ...parsed, source: 'ai' };
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
@@ -58,7 +58,7 @@ export class SummaryService {
   }
 }
 
-/** The model must rank every approval exactly once, using real ids only. */
+
 function coversExactly(
   summary: SummaryResponse,
   approvals: Approval[],

@@ -10,7 +10,7 @@ import { chatTalkPromptV1 } from '../prompts/chat-talk.v1';
 import { chatTeachPromptV1 } from '../prompts/chat-teach.v1';
 import { ChatEvent, FRIENDLY_ERROR_MESSAGE } from './chat.events';
 
-/** Bounds prompt size (and cost) on long conversations. */
+
 const MAX_HISTORY_MESSAGES = 20;
 
 @Injectable()
@@ -22,10 +22,7 @@ export class ChatService {
     private readonly approvalsService: ApprovalsService,
   ) {}
 
-  /**
-   * Streams the answer as events: `token`* then `done`, or `token`* then a
-   * single `error`. Never throws, so the stream always ends cleanly.
-   */
+
   async *chat(request: ChatRequest): AsyncGenerator<ChatEvent> {
     try {
       let tokens = 0;
@@ -48,11 +45,7 @@ export class ChatService {
     }
   }
 
-  /**
-   * Picks the prompt by mode and injects the approvals into the current
-   * question. Earlier turns are sent as they were, so follow-ups such as
-   * "explain step 2 simpler" have the conversation to adapt to.
-   */
+
   private buildRequest(request: ChatRequest): LlmRequest {
     const prompt =
       request.mode === 'teach' ? chatTeachPromptV1 : chatTalkPromptV1;
@@ -79,7 +72,6 @@ export class ChatService {
   }
 }
 
-/** The last N messages, never starting in the middle of an exchange. */
 function recentMessages(messages: ChatMessage[]): ChatMessage[] {
   const recent = messages.slice(-MAX_HISTORY_MESSAGES);
   while (recent[0]?.role === 'assistant') {

@@ -10,7 +10,7 @@ import { ChatService } from './chat.service';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  /** Returns an Observable: each emitted event reaches the caller as it happens. */
+
   @MessagePattern({ cmd: ChatPtrn })
   chat(@Payload() payload: unknown): Observable<ChatEvent> {
     const parsed = ChatRequest.safeParse(payload);

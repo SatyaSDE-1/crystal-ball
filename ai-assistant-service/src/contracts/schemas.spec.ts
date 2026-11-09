@@ -6,6 +6,7 @@ import {
   GreetingResponse,
   HelpRequest,
   HelpResponse,
+  LocaleRequest,
   SummaryResponse,
 } from './schemas';
 
@@ -238,5 +239,36 @@ describe('GreetingResponse', () => {
     expect(
       GreetingResponse.safeParse({ text: 'Hello', source: 'robot' }).success,
     ).toBe(false);
+  });
+});
+
+describe('LocaleRequest', () => {
+  it('accepts an empty body: the locale is optional', () => {
+    expect(LocaleRequest.safeParse({}).success).toBe(true);
+  });
+
+  it('accepts language codes with and without a region', () => {
+    for (const locale of ['en', 'es', 'hi-IN', 'pt-BR', 'zh-Hant-TW', 'fil']) {
+      expect(LocaleRequest.safeParse({ locale }).success).toBe(true);
+    }
+  });
+
+  it('rejects anything that is not a language code', () => {
+    for (const locale of [
+      '',
+      'x',
+      'english please',
+      'es;drop table',
+      'a'.repeat(40),
+      42,
+    ]) {
+      expect(LocaleRequest.safeParse({ locale }).success).toBe(false);
+    }
+  });
+
+  it('drops fields it does not know', () => {
+    expect(LocaleRequest.parse({ locale: 'es', isAdmin: true })).toEqual({
+      locale: 'es',
+    });
   });
 });

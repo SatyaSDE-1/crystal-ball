@@ -5,7 +5,7 @@ import { helpPromptV1, NOT_COVERED_ANSWER } from '../prompts/help.v1';
 import { PolicyChunk } from '../prompts/types';
 import { RetrievalService } from '../retrieval/retrieval.service';
 
-/** Compares answers ignoring case, quotes and punctuation. */
+
 function normalise(text: string): string {
   return text
     .toLowerCase()
@@ -22,14 +22,7 @@ export class HelpService {
     private readonly retrieval: RetrievalService,
   ) {}
 
-  /**
-   * Retrieve first, then answer only from what was retrieved.
-   * Never throws: any LLM failure degrades to the top chunk, verbatim.
-   *
-   * `source` is "ai" only when the model produced the answer. A question
-   * with no matching chunk never reaches the model, so that reply is
-   * deterministic and is marked "fallback".
-   */
+ 
   async getHelp({ question }: HelpRequest): Promise<HelpResponse> {
     const chunks = this.retrieval.retrieve(question);
 
@@ -53,7 +46,7 @@ export class HelpService {
         return this.fallback(chunks, 'LLM returned an empty answer');
       }
 
-      // The model decided the context does not answer it: cite nothing.
+
       if (normalise(answer) === normalise(NOT_COVERED_ANSWER)) {
         return { answer: NOT_COVERED_ANSWER, citations: [], source: 'ai' };
       }

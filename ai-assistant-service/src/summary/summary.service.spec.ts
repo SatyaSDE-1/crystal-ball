@@ -3,7 +3,7 @@ import { ApprovalsService } from '../approvals/approvals.service';
 import { SummaryResponse } from '../contracts/schemas';
 import { LlmError, LlmTimeoutError } from '../llm/llm.errors';
 import { LlmProvider } from '../llm/llm.provider';
-import { summaryPromptV1 } from '../prompts/summary.v1';
+import { summaryPromptV2 } from '../prompts/summary.v2';
 import { rankApprovals } from './fallback-ranking';
 import { SummaryService } from './summary.service';
 
@@ -57,20 +57,88 @@ describe('SummaryService', () => {
     expect(result.source).toBe('ai');
   });
 
-  it('builds the request from the summary.v1 prompt and the approvals', async () => {
+  it('builds the request from the summary.v2 prompt and the approvals', async () => {
     const complete = jest.fn().mockResolvedValue(JSON.stringify(aiSummary));
 
     await buildService(complete).getSummary();
 
     expect(complete).toHaveBeenCalledTimes(1);
     expect(complete).toHaveBeenCalledWith({
-      system: summaryPromptV1.system,
+      system: summaryPromptV2.system,
       messages: [
         {
           role: 'user',
-          content: summaryPromptV1.buildUserPrompt({ approvals }),
+          content: summaryPromptV2.buildUserPrompt({ approvals }),
         },
       ],
+    });
+  });
+
+  describe("the operator's language", () => {
+    const spanish = {
+      ...aiSummary,
+      headline:
+        'Cuatro aprobaciones pendientes; las especificaciones de seguridad primero.',
+      items: aiSummary.items.map((item) => ({
+        ...item,
+        reason: 'Motivo en español.',
+      })),
+    };
+
+    it('asks the model to write in the operator language', async () => {
+      const complete = jest.fn().mockResolvedValue(JSON.stringify(spanish));
+
+      await buildService(complete).getSummary({ locale: 'es' });
+
+      expect(complete).toHaveBeenCalledWith({
+        system: summaryPromptV2.system,
+        messages: [
+          {
+            role: 'user',
+            content: summaryPromptV2.buildUserPrompt({
+              approvals,
+              locale: 'es',
+            }),
+          },
+        ],
+      });
+      const [request] = complete.mock.calls[0] as [
+        { messages: { content: string }[] },
+      ];
+      expect(request.messages[0].content).toContain('Spanish');
+    });
+
+    it('accepts a summary written in another language, as long as the structure is right', async () => {
+      const complete = jest.fn().mockResolvedValue(JSON.stringify(spanish));
+
+      const result = await buildService(complete).getSummary({ locale: 'es' });
+
+      expect(result.source).toBe('ai');
+      expect(result.headline).toBe(spanish.headline);
+      expect(SummaryResponse.safeParse(result).success).toBe(true);
+    });
+
+    it('still rejects a translated urgency, because the enum stays English', async () => {
+      const translated = {
+        ...spanish,
+        items: spanish.items.map((item) => ({ ...item, urgency: 'alta' })),
+      };
+      const complete = jest.fn().mockResolvedValue(JSON.stringify(translated));
+
+      const result = await buildService(complete).getSummary({ locale: 'es' });
+
+      expect(result.source).toBe('fallback');
+    });
+
+    it('sends no language instruction when there is no locale', async () => {
+      const complete = jest.fn().mockResolvedValue(JSON.stringify(aiSummary));
+
+      await buildService(complete).getSummary();
+
+      const [request] = complete.mock.calls[0] as [
+        { messages: { content: string }[] },
+      ];
+      expect(request.messages[0].content).not.toMatch(/language/i);
     });
   });
 

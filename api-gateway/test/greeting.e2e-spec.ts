@@ -3,7 +3,7 @@ import {
   INestApplication,
   INestMicroservice,
 } from '@nestjs/common';
-import { MessagePattern, Transport } from '@nestjs/microservices';
+import { MessagePattern, Payload, Transport } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
@@ -22,8 +22,11 @@ const STUB_GREETING = {
 @Controller()
 class StubAiAssistantController {
   @MessagePattern({ cmd: GreetingPtrn })
-  getGreeting() {
-    return STUB_GREETING;
+  getGreeting(@Payload() payload: { locale?: string } | undefined) {
+    // echoes the locale it received, so a test can see what was forwarded
+    return payload?.locale
+      ? { ...STUB_GREETING, text: `locale:${payload.locale}` }
+      : STUB_GREETING;
   }
 }
 
@@ -66,6 +69,16 @@ describe('POST /api/greeting (e2e)', () => {
 
     expect(res.headers['content-type']).toMatch(/application\/json/);
     expect(res.body).toEqual(STUB_GREETING);
+  });
+
+  it("forwards the operator's language to the AI service", async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/greeting')
+      .set('x-session-id', 'locale-1')
+      .send({ locale: 'hi-IN' })
+      .expect(200);
+
+    expect((res.body as { text: string }).text).toBe('locale:hi-IN');
   });
 
   it('works without a body or a session header', async () => {

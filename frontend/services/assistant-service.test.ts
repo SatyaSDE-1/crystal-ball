@@ -23,8 +23,8 @@ function sse(...parts: string[]) {
   return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } })
 }
 
-function build(fetchImpl: typeof fetch) {
-  return createAssistantService({ baseUrl: BASE, fetch: fetchImpl, getSessionId: () => 'session-1' })
+function build(fetchImpl: typeof fetch, getLocale: () => string | undefined = () => 'en-GB') {
+  return createAssistantService({ baseUrl: BASE, fetch: fetchImpl, getSessionId: () => 'session-1', getLocale })
 }
 
 async function collect(source: AsyncIterable<ChatEvent>) {
@@ -53,7 +53,7 @@ describe('createAssistantService', () => {
         'Content-Type': 'application/json',
         'x-session-id': 'session-1',
       })
-      expect(init.body).toBe('{}')
+      expect(init.body).toBe('{"locale":"en-GB"}')
     })
 
     it('POSTs the summary to /summary', async () => {
@@ -62,6 +62,38 @@ describe('createAssistantService', () => {
       await build(fetchMock).getSummary()
 
       expect((fetchMock.mock.calls[0] as [string])[0]).toBe(`${BASE}/summary`)
+    })
+
+    it("sends the operator's language with the summary and the greeting", async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(json(200, validSummary))
+        .mockResolvedValueOnce(json(200, { text: 'Hola! 4 pendientes.', source: 'ai' }))
+      const service = build(fetchMock, () => 'es-MX')
+
+      await service.getSummary()
+      await service.getGreeting()
+
+      const bodies = fetchMock.mock.calls.map(call => JSON.parse((call[1] as RequestInit).body as string))
+      expect(bodies).toEqual([{ locale: 'es-MX' }, { locale: 'es-MX' }])
+    })
+
+    it('sends no locale when the browser does not report a usable one', async () => {
+      // a response body can only be read once, so each call gets a fresh one
+      const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json(200, validSummary)))
+
+      await build(fetchMock, () => undefined).getSummary()
+      await build(fetchMock, () => 'not a locale!').getSummary()
+
+      for (const call of fetchMock.mock.calls) {
+        expect((call[1] as RequestInit).body).toBe('{}')
+      }
+    })
+
+    it('does not send a locale with the help question or the chat', async () => {
+      const helpFetch = vi.fn().mockResolvedValue(json(200, { answer: 'A', citations: [], source: 'ai' }))
+      await build(helpFetch).askHelp('abc')
+      expect(JSON.parse((helpFetch.mock.calls[0][1] as RequestInit).body as string)).toEqual({ question: 'abc' })
     })
 
     it('POSTs the question to /help', async () => {

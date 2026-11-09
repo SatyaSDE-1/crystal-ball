@@ -42,8 +42,8 @@ describe('Summary message pattern (e2e over TCP)', () => {
   let app: INestApplication;
   let client: ClientProxy;
 
-  const requestSummary = () =>
-    firstValueFrom(client.send<SummaryResponse>({ cmd: SummaryPtrn }, {}));
+  const requestSummary = (payload: unknown = {}) =>
+    firstValueFrom(client.send<SummaryResponse>({ cmd: SummaryPtrn }, payload));
 
   beforeAll(async () => {
     process.env.TCP_HOST = '127.0.0.1';
@@ -84,6 +84,32 @@ describe('Summary message pattern (e2e over TCP)', () => {
     expect(SummaryResponse.safeParse(result).success).toBe(true);
     expect(result.source).toBe('ai');
     expect(result.items).toHaveLength(4);
+  });
+
+  it("asks Cohere for the operator's language and accepts the translated summary", async () => {
+    const spanish = {
+      ...aiSummary,
+      headline: 'Cuatro aprobaciones pendientes.',
+    };
+    mockChat.mockResolvedValue(cohereReply(JSON.stringify(spanish)));
+
+    const result = await requestSummary({ locale: 'es' });
+
+    expect(result.source).toBe('ai');
+    expect(result.headline).toBe('Cuatro aprobaciones pendientes.');
+    const [body] = mockChat.mock.calls[0] as [
+      { messages: { role: string; content: string }[] },
+    ];
+    expect(JSON.stringify(body.messages)).toContain('Spanish');
+  });
+
+  it('rejects an invalid locale before calling the model', async () => {
+    await expect(
+      requestSummary({ locale: 'not a locale!' }),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+    });
+    expect(mockChat).not.toHaveBeenCalled();
   });
 
   it('returns the fallback (source "fallback") when the LLM times out', async () => {

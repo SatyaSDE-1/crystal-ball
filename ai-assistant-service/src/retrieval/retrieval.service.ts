@@ -5,7 +5,7 @@ import { PolicyChunk } from '../prompts/types';
 import { chunkPolicy } from './chunk-policy';
 
 const DEFAULT_LIMIT = 2;
-/** A word in a chunk's heading says more about its topic than one in its body. */
+
 const HEADING_WEIGHT = 3;
 const BODY_WEIGHT = 1;
 
@@ -57,7 +57,7 @@ const STOPWORDS = new Set([
   'note',
 ]);
 
-/** Light stemming so "rejected", "rejection" and "reject" match each other. */
+
 function stem(word: string): string {
   let result = word;
   for (const suffix of ['ions', 'ion', 'ing', 'ed', 'es', 's']) {
@@ -72,7 +72,7 @@ function stem(word: string): string {
   return result;
 }
 
-/** Distinct, lowercased, stemmed keywords of a text (stopwords removed). */
+
 export function tokenize(text: string): string[] {
   const words = text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
   const keywords = words
@@ -87,16 +87,7 @@ interface IndexedChunk {
   bodyTokens: Set<string>;
 }
 
-/**
- * In-memory keyword retrieval over the policy note. No embeddings or vector
- * store: with ~5 short chunks, weighted keyword overlap is enough to
- * demonstrate the retrieve-then-ground pattern.
- *
- * Score per chunk = sum over query keywords of
- *   rarity(keyword) * (3 if in the heading + 1 if in the body)
- * where rarity favours keywords that appear in few chunks (so "PDF" beats
- * "review"). Chunks with no overlap are never returned.
- */
+
 @Injectable()
 export class RetrievalService {
   private readonly indexed: IndexedChunk[];

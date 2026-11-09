@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ApprovalsService } from '../approvals/approvals.service';
-import { GreetingResponse } from '../contracts/schemas';
+import { GreetingResponse, LocaleRequest } from '../contracts/schemas';
 import { LLM_PROVIDER, type LlmProvider } from '../llm/llm.provider';
-import { greetingPromptV1 } from '../prompts/greeting.v1';
+import { greetingPromptV2 } from '../prompts/greeting.v2';
 import {
   cleanGreeting,
   countPending,
@@ -28,16 +28,16 @@ export class GreetingService {
    * Regenerated on every call (never cached or replayed).
    * Never throws: any failure degrades to "You have N approvals pending."
    */
-  async getGreeting(): Promise<GreetingResponse> {
+  async getGreeting({ locale }: LocaleRequest = {}): Promise<GreetingResponse> {
     const pendingCount = countPending(this.approvalsService.getApprovals());
 
     try {
       const raw = await this.llm.complete({
-        system: greetingPromptV1.system,
+        system: greetingPromptV2.system,
         messages: [
           {
             role: 'user',
-            content: greetingPromptV1.buildUserPrompt({ pendingCount }),
+            content: greetingPromptV2.buildUserPrompt({ pendingCount, locale }),
           },
         ],
         temperature: GREETING_TEMPERATURE,

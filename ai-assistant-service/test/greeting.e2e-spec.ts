@@ -31,8 +31,10 @@ describe('Greeting message pattern (e2e over TCP)', () => {
   let app: INestApplication;
   let client: ClientProxy;
 
-  const requestGreeting = () =>
-    firstValueFrom(client.send<GreetingResponse>({ cmd: GreetingPtrn }, {}));
+  const requestGreeting = (payload: unknown = {}) =>
+    firstValueFrom(
+      client.send<GreetingResponse>({ cmd: GreetingPtrn }, payload),
+    );
 
   beforeAll(async () => {
     process.env.TCP_HOST = '127.0.0.1';
@@ -75,6 +77,30 @@ describe('Greeting message pattern (e2e over TCP)', () => {
     expect(GreetingResponse.safeParse(result).success).toBe(true);
     expect(result.source).toBe('ai');
     expect(result.text).toContain('4');
+  });
+
+  it("greets in the operator's language", async () => {
+    mockChat.mockResolvedValue(
+      cohereReply('¡Hola! Tienes 4 aprobaciones pendientes.'),
+    );
+
+    const result = await requestGreeting({ locale: 'es' });
+
+    expect(result).toEqual({
+      text: '¡Hola! Tienes 4 aprobaciones pendientes.',
+      source: 'ai',
+    });
+    const [body] = mockChat.mock.calls[0] as [
+      { messages: { content: string }[] },
+    ];
+    expect(JSON.stringify(body.messages)).toContain('Spanish');
+  });
+
+  it('rejects an invalid locale before calling the model', async () => {
+    await expect(requestGreeting({ locale: 42 })).rejects.toMatchObject({
+      statusCode: 400,
+    });
+    expect(mockChat).not.toHaveBeenCalled();
   });
 
   it('regenerates: two requests give two different greetings', async () => {

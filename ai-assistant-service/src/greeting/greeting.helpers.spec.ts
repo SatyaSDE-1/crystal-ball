@@ -77,6 +77,28 @@ describe('mentionsCount', () => {
   });
 });
 
+describe('mentionsCount with other writing systems', () => {
+  it('accepts the count written in native digits', () => {
+    expect(mentionsCount('नमस्ते! आपके ४ अनुमोदन लंबित हैं।', 4)).toBe(true); // Devanagari
+    expect(mentionsCount('مرحبا! لديك ٤ طلبات', 4)).toBe(true); // Arabic-Indic
+    expect(mentionsCount('こんにちは！承認待ちは４件です', 4)).toBe(true); // full-width
+  });
+
+  it('accepts ordinary digits next to non-Latin text', () => {
+    expect(mentionsCount('आपके अभी 4 मंजूरी वाले पेंडिंग हैं।', 4)).toBe(true);
+    expect(mentionsCount('承認待ちが4件あります', 4)).toBe(true);
+  });
+
+  it('does not match the count inside a larger number', () => {
+    expect(mentionsCount('आपके १४ अनुमोदन लंबित हैं।', 4)).toBe(false);
+    expect(mentionsCount('لديك ١٤ طلبات', 4)).toBe(false);
+  });
+
+  it('still rejects a greeting without any count', () => {
+    expect(mentionsCount('नमस्ते! स्वागत है।', 4)).toBe(false);
+  });
+});
+
 describe('cleanGreeting', () => {
   it('trims whitespace', () => {
     expect(cleanGreeting('  Hello there!  \n')).toBe('Hello there!');

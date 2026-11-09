@@ -1,4 +1,4 @@
-import { ChatRequest, EmptyRequest, HelpRequest } from './schemas';
+import { ChatRequest, HelpRequest, LocaleRequest } from './schemas';
 
 describe('HelpRequest', () => {
   it('accepts a question of 3 or more characters', () => {
@@ -14,23 +14,45 @@ describe('HelpRequest', () => {
   });
 });
 
-describe('EmptyRequest (summary and greeting take no input)', () => {
+describe('LocaleRequest (summary and greeting take no input, except the language)', () => {
   it('accepts an empty object', () => {
-    expect(EmptyRequest.safeParse({}).success).toBe(true);
+    expect(LocaleRequest.safeParse({}).success).toBe(true);
   });
 
   it('accepts a missing body', () => {
-    expect(EmptyRequest.safeParse(undefined).success).toBe(true);
+    expect(LocaleRequest.safeParse(undefined).success).toBe(true);
   });
 
-  it('drops any fields sent along', () => {
-    expect(EmptyRequest.parse({ anything: 'ignored' })).toEqual({});
+  it('accepts language codes with and without a region', () => {
+    for (const locale of ['en', 'es', 'hi-IN', 'pt-BR', 'zh-Hant-TW']) {
+      expect(LocaleRequest.parse({ locale })).toEqual({ locale });
+    }
+  });
+
+  it('rejects anything that is not a language code', () => {
+    for (const locale of [
+      '',
+      'x',
+      'english please',
+      'es;drop table',
+      'a'.repeat(40),
+      42,
+    ]) {
+      expect(LocaleRequest.safeParse({ locale }).success).toBe(false);
+    }
+  });
+
+  it('drops any other field sent along', () => {
+    expect(LocaleRequest.parse({ locale: 'es', anything: 'ignored' })).toEqual({
+      locale: 'es',
+    });
+    expect(LocaleRequest.parse({ anything: 'ignored' })).toEqual({});
   });
 
   it('rejects a body that is not an object', () => {
-    expect(EmptyRequest.safeParse('hello').success).toBe(false);
-    expect(EmptyRequest.safeParse([1, 2]).success).toBe(false);
-    expect(EmptyRequest.safeParse(null).success).toBe(false);
+    expect(LocaleRequest.safeParse('hello').success).toBe(false);
+    expect(LocaleRequest.safeParse([1, 2]).success).toBe(false);
+    expect(LocaleRequest.safeParse(null).success).toBe(false);
   });
 });
 

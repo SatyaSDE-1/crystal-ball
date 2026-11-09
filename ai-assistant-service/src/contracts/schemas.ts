@@ -1,13 +1,6 @@
 import { z } from 'zod';
 
-/**
- * Request/response contracts for the AI assistant.
- *
- * Each schema shares its name with its inferred type, so callers can write
- * `SummaryResponse.safeParse(x)` and annotate with `SummaryResponse`.
- */
 
-/** Where a response came from: the LLM, or the deterministic fallback. */
 export const Source = z.enum(['ai', 'fallback']);
 export type Source = z.infer<typeof Source>;
 
@@ -56,6 +49,15 @@ export const ChatRequest = z
     },
   );
 export type ChatRequest = z.infer<typeof ChatRequest>;
+
+
+export const LOCALE_PATTERN = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
+
+/** Summary and greeting take no input, except the operator's language. */
+export const LocaleRequest = z.object({
+  locale: z.string().max(35).regex(LOCALE_PATTERN).optional(),
+});
+export type LocaleRequest = z.infer<typeof LocaleRequest>;
 
 export const HelpRequest = z.object({
   question: z.string().min(3),

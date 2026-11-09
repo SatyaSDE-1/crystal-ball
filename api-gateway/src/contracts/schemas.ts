@@ -34,9 +34,15 @@ export const HelpRequest = z.object({
 });
 export type HelpRequest = z.infer<typeof HelpRequest>;
 
+/** A language code such as "es", "hi-IN" or "zh-Hant-TW" (what navigator.language returns). */
+export const LOCALE_PATTERN = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
+
 /**
- * Summary and greeting take no input. The body may be missing or `{}`;
- * anything that is not an object is rejected, and extra fields are dropped.
+ * Summary and greeting take no input except the operator's language, which
+ * is optional. The body may be missing or `{}`; anything that is not an
+ * object is rejected, and extra fields are dropped.
  */
-export const EmptyRequest = z.object({}).default({});
-export type EmptyRequest = z.infer<typeof EmptyRequest>;
+export const LocaleRequest = z
+  .object({ locale: z.string().max(35).regex(LOCALE_PATTERN).optional() })
+  .default({});
+export type LocaleRequest = z.infer<typeof LocaleRequest>;

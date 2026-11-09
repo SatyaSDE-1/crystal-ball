@@ -18,7 +18,6 @@ async function* tokens(...chunks: string[]) {
   }
 }
 
-/** A stream that yields some tokens, then fails. */
 async function* failingAfter(chunks: string[], error: Error) {
   for (const chunk of chunks) {
     await Promise.resolve();

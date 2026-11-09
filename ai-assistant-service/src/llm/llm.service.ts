@@ -7,7 +7,7 @@ import { LlmProvider, LlmRequest } from './llm.provider';
 const DEFAULT_MODEL = 'command-a-03-2025';
 const DEFAULT_TIMEOUT_MS = 8000;
 
-/** Cohere implementation of LlmProvider. */
+
 @Injectable()
 export class LlmService implements LlmProvider {
   private client?: CohereClientV2;

@@ -3,7 +3,7 @@ import { ApprovalsService } from '../approvals/approvals.service';
 import { Approval, GreetingResponse } from '../contracts/schemas';
 import { LlmError, LlmTimeoutError } from '../llm/llm.errors';
 import { LlmProvider } from '../llm/llm.provider';
-import { greetingPromptV1 } from '../prompts/greeting.v1';
+import { greetingPromptV2 } from '../prompts/greeting.v2';
 import { GreetingService } from './greeting.service';
 
 const realApprovals = new ApprovalsService();
@@ -52,20 +52,51 @@ describe('GreetingService', () => {
     expect(GreetingResponse.safeParse(result).success).toBe(true);
   });
 
-  it('builds the request from greeting.v1 with the real pending count', async () => {
+  it('builds the request from greeting.v2 with the real pending count', async () => {
     const complete = jest.fn().mockResolvedValue('Hi! 4 approvals await.');
 
     await buildService(complete).getGreeting();
 
     expect(complete).toHaveBeenCalledWith({
-      system: greetingPromptV1.system,
+      system: greetingPromptV2.system,
       messages: [
         {
           role: 'user',
-          content: greetingPromptV1.buildUserPrompt({ pendingCount: 4 }),
+          content: greetingPromptV2.buildUserPrompt({ pendingCount: 4 }),
         },
       ],
       temperature: expect.any(Number) as number,
+    });
+  });
+
+  it('greets in the operator language when one is given', async () => {
+    const complete = jest
+      .fn()
+      .mockResolvedValue('¡Hola! Tienes 4 aprobaciones pendientes.');
+
+    const result = await buildService(complete).getGreeting({ locale: 'es' });
+
+    expect(result).toEqual({
+      text: '¡Hola! Tienes 4 aprobaciones pendientes.',
+      source: 'ai',
+    });
+    const [request] = complete.mock.calls[0] as [
+      { messages: { content: string }[] },
+    ];
+    expect(request.messages[0].content).toBe(
+      greetingPromptV2.buildUserPrompt({ pendingCount: 4, locale: 'es' }),
+    );
+    expect(request.messages[0].content).toContain('Spanish');
+  });
+
+  it('falls back (in English) if a non-English greeting leaves the count out', async () => {
+    const complete = jest.fn().mockResolvedValue('¡Hola, operador!');
+
+    const result = await buildService(complete).getGreeting({ locale: 'es' });
+
+    expect(result).toEqual({
+      text: 'You have 4 approvals pending.',
+      source: 'fallback',
     });
   });
 
@@ -122,7 +153,7 @@ describe('GreetingService', () => {
         messages: [
           {
             role: 'user',
-            content: greetingPromptV1.buildUserPrompt({ pendingCount: 2 }),
+            content: greetingPromptV2.buildUserPrompt({ pendingCount: 2 }),
           },
         ],
       }),

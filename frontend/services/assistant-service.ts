@@ -13,6 +13,7 @@ import {
   SummaryResponse as SummaryResponseSchema,
 } from '@/lib/contracts'
 import { ApiError, errorFromResponse, isAbortError } from '@/lib/errors'
+import { getBrowserLocale, sanitizeLocale } from '@/lib/locale'
 import { getSessionId } from '@/lib/session'
 import { parseSseStream } from '@/services/sse'
 
@@ -30,6 +31,8 @@ type Options = {
   baseUrl: string
   fetch?: typeof fetch
   getSessionId?: () => string
+  /** The operator's language. Defaults to the browser's. */
+  getLocale?: () => string | undefined
 }
 
 async function* readChunks(body: ReadableStream<Uint8Array>): AsyncGenerator<Uint8Array> {
@@ -52,7 +55,14 @@ export function createAssistantService({
   baseUrl,
   fetch: fetchImpl = (...args) => fetch(...args),
   getSessionId: sessionId = getSessionId,
+  getLocale: locale = getBrowserLocale,
 }: Options): AssistantService {
+  /** The summary and greeting take only the operator's language, and only if it looks valid. */
+  const localeBody = () => {
+    const value = sanitizeLocale(locale())
+    return value ? { locale: value } : {}
+  }
+
   /** POSTs JSON. Aborts pass through untouched; every other failure becomes an ApiError. */
   async function post(path: string, body: unknown, signal?: AbortSignal): Promise<Response> {
     let response: Response
@@ -113,8 +123,8 @@ export function createAssistantService({
   }
 
   return {
-    getGreeting: signal => postJson('/greeting', {}, GreetingResponseSchema, signal),
-    getSummary: signal => postJson('/summary', {}, SummaryResponseSchema, signal),
+    getGreeting: signal => postJson('/greeting', localeBody(), GreetingResponseSchema, signal),
+    getSummary: signal => postJson('/summary', localeBody(), SummaryResponseSchema, signal),
     askHelp: (question, signal) => postJson('/help', { question }, HelpResponseSchema, signal),
     streamChat,
   }
