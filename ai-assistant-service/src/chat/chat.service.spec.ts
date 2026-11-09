@@ -84,7 +84,9 @@ describe('ChatService', () => {
 
   describe('choosing the prompt by mode', () => {
     it('uses chat-talk.v1 for talk mode', async () => {
-      const stream = jest.fn((_request: LlmRequest) => tokens('ok'));
+      const stream = jest.fn<AsyncGenerator<string>, [LlmRequest]>(() =>
+        tokens('ok'),
+      );
 
       await collect(buildService(stream).chat(talkRequest));
 
@@ -92,7 +94,9 @@ describe('ChatService', () => {
     });
 
     it('uses chat-teach.v1 for teach mode', async () => {
-      const stream = jest.fn((_request: LlmRequest) => tokens('ok'));
+      const stream = jest.fn<AsyncGenerator<string>, [LlmRequest]>(() =>
+        tokens('ok'),
+      );
 
       await collect(
         buildService(stream).chat({
@@ -108,7 +112,9 @@ describe('ChatService', () => {
 
   describe('building the conversation', () => {
     it('injects the approvals list into the current user message', async () => {
-      const stream = jest.fn((_request: LlmRequest) => tokens('ok'));
+      const stream = jest.fn<AsyncGenerator<string>, [LlmRequest]>(() =>
+        tokens('ok'),
+      );
 
       await collect(buildService(stream).chat(talkRequest));
 
@@ -126,7 +132,9 @@ describe('ChatService', () => {
     });
 
     it('keeps earlier turns as they were and wraps only the latest question', async () => {
-      const stream = jest.fn((_request: LlmRequest) => tokens('ok'));
+      const stream = jest.fn<AsyncGenerator<string>, [LlmRequest]>(() =>
+        tokens('ok'),
+      );
 
       await collect(
         buildService(stream).chat({
@@ -156,7 +164,9 @@ describe('ChatService', () => {
     });
 
     it('sends only the most recent 20 messages of a long conversation', async () => {
-      const stream = jest.fn((_request: LlmRequest) => tokens('ok'));
+      const stream = jest.fn<AsyncGenerator<string>, [LlmRequest]>(() =>
+        tokens('ok'),
+      );
       const history = Array.from({ length: 31 }, (_, i) => ({
         role: i % 2 === 0 ? ('user' as const) : ('assistant' as const),
         content: `message ${i}`,
@@ -191,9 +201,7 @@ describe('ChatService', () => {
     });
 
     it('emits a friendly error event on an LLM timeout', async () => {
-      const stream = jest.fn(() =>
-        failingAfter([], new LlmTimeoutError(8000)),
-      );
+      const stream = jest.fn(() => failingAfter([], new LlmTimeoutError(8000)));
 
       const events = await collect(buildService(stream).chat(talkRequest));
 

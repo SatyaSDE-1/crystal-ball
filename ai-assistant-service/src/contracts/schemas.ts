@@ -40,11 +40,21 @@ export const ChatMessage = z.object({
 });
 export type ChatMessage = z.infer<typeof ChatMessage>;
 
-export const ChatRequest = z.object({
-  sessionId: z.string().min(1),
-  mode: z.enum(['talk', 'teach']),
-  messages: z.array(ChatMessage).min(1),
-});
+export const ChatRequest = z
+  .object({
+    sessionId: z.string().min(1),
+    mode: z.enum(['talk', 'teach']),
+    messages: z.array(ChatMessage).min(1),
+  })
+  .refine(
+    // A turn to answer needs the user to have spoken last.
+    (request) =>
+      request.messages.length === 0 || request.messages.at(-1)?.role === 'user',
+    {
+      message: 'The last message must be from the user',
+      path: ['messages'],
+    },
+  );
 export type ChatRequest = z.infer<typeof ChatRequest>;
 
 export const HelpRequest = z.object({

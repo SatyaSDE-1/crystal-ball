@@ -40,7 +40,10 @@ const talkBody = {
   sessionId: 'test-1',
   mode: 'talk',
   messages: [
-    { role: 'user', content: 'Which approval needs my attention first and why?' },
+    {
+      role: 'user',
+      content: 'Which approval needs my attention first and why?',
+    },
   ],
 };
 
@@ -85,7 +88,9 @@ describe('Chat message pattern (e2e over TCP, streaming)', () => {
   });
 
   it('streams token events, then a done event (Test 8, talk)', async () => {
-    mockChatStream.mockResolvedValue(cohereStream('Safety', ' specs', ' first'));
+    mockChatStream.mockResolvedValue(
+      cohereStream('Safety', ' specs', ' first'),
+    );
 
     const events = await chat(talkBody);
 
@@ -150,7 +155,9 @@ describe('Chat message pattern (e2e over TCP, streaming)', () => {
 
     const events = await chat(talkBody);
 
-    expect(events).toEqual([{ type: 'error', message: FRIENDLY_ERROR_MESSAGE }]);
+    expect(events).toEqual([
+      { type: 'error', message: FRIENDLY_ERROR_MESSAGE },
+    ]);
   });
 
   it('emits a friendly error event when the stream stalls past the timeout', async () => {
@@ -158,7 +165,9 @@ describe('Chat message pattern (e2e over TCP, streaming)', () => {
 
     const events = await chat(talkBody);
 
-    expect(events).toEqual([{ type: 'error', message: FRIENDLY_ERROR_MESSAGE }]);
+    expect(events).toEqual([
+      { type: 'error', message: FRIENDLY_ERROR_MESSAGE },
+    ]);
   });
 
   it('emits the error event when FORCE_LLM_FAILURE is on, without calling Cohere', async () => {
@@ -166,7 +175,9 @@ describe('Chat message pattern (e2e over TCP, streaming)', () => {
 
     const events = await chat(talkBody);
 
-    expect(events).toEqual([{ type: 'error', message: FRIENDLY_ERROR_MESSAGE }]);
+    expect(events).toEqual([
+      { type: 'error', message: FRIENDLY_ERROR_MESSAGE },
+    ]);
     expect(mockChatStream).not.toHaveBeenCalled();
   });
 
