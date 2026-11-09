@@ -93,6 +93,26 @@ describe('LlmService', () => {
       );
     });
 
+    it('passes the temperature to Cohere when one is requested', async () => {
+      mockChat.mockResolvedValue(cohereReply('ok'));
+
+      await buildService().complete({ ...request, temperature: 1 });
+
+      expect(mockChat).toHaveBeenCalledWith(
+        expect.objectContaining({ temperature: 1 }),
+        expect.anything(),
+      );
+    });
+
+    it('does not send a temperature when none is requested', async () => {
+      mockChat.mockResolvedValue(cohereReply('ok'));
+
+      await buildService().complete(request);
+
+      const [body] = mockChat.mock.calls[0] as [Record<string, unknown>];
+      expect(body).not.toHaveProperty('temperature');
+    });
+
     it('rejects with LlmTimeoutError after LLM_TIMEOUT_MS', async () => {
       jest.useFakeTimers();
       mockChat.mockReturnValue(new Promise(() => {})); // never settles

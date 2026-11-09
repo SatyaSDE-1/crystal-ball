@@ -8,6 +8,8 @@ export interface LlmRequest {
   system: string;
   /** Conversation so far; the last item is the current user turn. */
   messages: LlmMessage[];
+  /** Higher = more varied wording. Omit to use the provider's default. */
+  temperature?: number;
 }
 
 /**

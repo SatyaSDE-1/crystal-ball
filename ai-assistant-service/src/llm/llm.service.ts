@@ -87,6 +87,9 @@ export class LlmService implements LlmProvider {
         { role: 'system' as const, content: request.system },
         ...request.messages,
       ],
+      ...(request.temperature !== undefined && {
+        temperature: request.temperature,
+      }),
     };
   }
 
